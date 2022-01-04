@@ -30,14 +30,8 @@ color ray_color(const ray &r, const color &background, const hittable &world, in
 
     if (!rec.mat_ptr->scatter(r, rec, attenuation, scattered))
         return emitted;
-    // point3 target = rec.p + rec.normal + random_in_unit_sphere(); // hack
-    // point3 target = rec.p + rec.normal + random_unit_vector(); // Lambertian reflection
-    point3 target = rec.p + random_in_hemishpere(rec.normal); // Lambertian reflection from hit point
-    return 0.5 * ray_color(ray(rec.p, target - rec.p), world, depth - 1);
 
-    vec3 unit_direction = unit_vector(r.direction());
-    double t = 0.5 * (unit_direction.y() + 1.0);
-    return (1.0 - t) * color(1.0, 1.0, 1.0) + t * color(0.5, 0.7, 1.0);
+    return emitted + attenuation * ray_color(scattered, background, world, depth - 1);
 }
 
 hittable_list random_scene() {
@@ -128,10 +122,12 @@ int main() {
     point3 lookat;
     auto vfov = 40.0;
     auto aperture = 0.0;
+    color background(0, 0, 0);
 
     switch (0) {
     case 1:
         world = random_scene();
+        background = color(0.7, 0.8, 1.0);
         lookfrom = point3(13, 2, 3);
         lookat = point3(0, 0, 0);
         vfov = 20.0;
@@ -139,22 +135,27 @@ int main() {
         break;
     case 2:
         world = two_spheres();
+        background = color(0.7, 0.8, 1.0);
         lookfrom = point3(13, 2, 3);
         lookat = point3(0, 0, 0);
         vfov = 20.0;
         break;
     case 3:
         world = two_perlin_spheres();
+        background = color(0.7, 0.8, 1.0);
         lookfrom = point3(13, 2, 3);
         lookat = point3(0, 0, 0);
         vfov = 20.0;
         break;
-    default:
     case 4:
         world = earth();
         lookfrom = point3(13, 2, 3);
         lookat = point3(0, 0, 0);
         vfov = 20.0;
+        break;
+    default:
+    case 5:
+        background = color(0, 0, 0);
         break;
     }
 
@@ -178,7 +179,7 @@ int main() {
                 auto u = (i + random_double()) / (image_width - 1); // uniform to [0,1]
                 auto v = (j + random_double()) / (image_height - 1);
                 ray r = cam.get_ray(u, v);
-                color temp_color = ray_color(r, world, max_depth);
+                color temp_color = ray_color(r, background, world, max_depth);
 #pragma omp critical
                 pixel_color += temp_color;
             }
