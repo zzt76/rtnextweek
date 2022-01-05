@@ -3,6 +3,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "external/stb_image_write.h"
 
+#include "aarect.h"
 #include "camera.h"
 #include "color.h"
 #include "hittable_list.h"
@@ -107,12 +108,27 @@ hittable_list earth() {
     return hittable_list(globe);
 }
 
+hittable_list simple_light() {
+    hittable_list objects;
+
+    auto pertext = make_shared<noise_texture>(4);
+    objects.add(make_shared<sphere>(point3(0, -1000, 0), 1000, make_shared<lambertian>(pertext)));
+    objects.add(make_shared<sphere>(point3(0, 2, 0), 2, make_shared<lambertian>(pertext)));
+    objects.add(make_shared<sphere>(point3(0, 2, 5), 2, make_shared<metal>(color(0.2, 0.75, 0.6), 0.5)));
+
+    auto difflight = make_shared<diffuse_light>(color(4, 4, 4));
+    objects.add(make_shared<sphere>(point3(0, 7, 3), 1, difflight));
+    objects.add(make_shared<xy_rect>(3, 5, 1, 3, -2, difflight));
+
+    return objects;
+}
+
 int main() {
     // Image
     const double aspect_ratio = 16.0 / 9.0;
     const int image_width = 400;
     const int image_height = static_cast<int>(image_width / aspect_ratio);
-    const int samples_per_pixel = 100;
+    int samples_per_pixel = 100;
     const int max_depth = 50;
 
     // World
@@ -155,7 +171,12 @@ int main() {
         break;
     default:
     case 5:
+        world = simple_light();
+        samples_per_pixel = 400;
         background = color(0, 0, 0);
+        lookfrom = point3(26, 3, 6);
+        lookat = point3(0, 2, 0);
+        vfov = 20.0;
         break;
     }
 
